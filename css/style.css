@@ -110,6 +110,8 @@ input::-webkit-inner-spin-button {
 }
 .office-address  .office-name{
   font-size: 16px;
+  color: black;
+  font-weight: bold;
 }
 .preffered-list{
   border-bottom: 1px solid #cccccc;
@@ -139,6 +141,7 @@ p.office-address-details{
 }
 p.office-person-name{
   color: black;
+  font-style: italic;
 }
 
 
@@ -408,11 +411,6 @@ opacity: 1;
 .container4-right{
   float: left;
   width: 50%;
-}
-/*Duel Faced Arrows*/
-.duel-faced{
-  height: 29px;
-  margin-bottom: 5px;
 }
 .group4{
   margin-left: 100px;
@@ -769,9 +767,11 @@ opacity: 1;
 .map-right-container .findAD{
   position: absolute;
   z-index: 10000;
-  right: 30px;
-  bottom: 30px;
+  right: 10px;
+  bottom: 10px;
   cursor: pointer;
+  font-size: 14px;
+  padding: 10px;
 }
 
 /*popup*/
@@ -1076,6 +1076,14 @@ nav li {
   width: 1920px;
   height: 320px;
   opacity: 1;
+}
+.other-audiology-checkbox {
+  vertical-align: middle;
+  margin-left: 10px;
+}
+input[type=checkbox]:checked:after {
+  background: green !important;
+  color: black !important;
 }
 /*
 
