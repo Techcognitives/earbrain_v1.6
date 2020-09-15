@@ -35,11 +35,11 @@
                     <input type="email" class="email" placeholder="Email">
                 </div>
                 <div class="zip-container">
-                    <input type="number" class="zip" placeholder="Zip Code">
+                    <input type="number" id="zipCode" class="zip" placeholder="Zip Code">
                 </div>
             </div>
             <div class="search-button">
-                <a href="map.html"><button type="submit" class="searchBTN"> FIND AN AUDIOLOGIST</button></a>
+                <a id="mylink" href="javascript:void(0)" onclick="ClickSubmit()"><button type="submit" class="searchBTN"> FIND AN AUDIOLOGIST</button></a>
             </div>
         </div>
         <div class="container8">
@@ -107,6 +107,14 @@
      </div>
 
         </div>
+        <script>
+            function ClickSubmit()
+                {
+                    var t = document.getElementById("zipCode").value;
+                    var s_a = document.getElementById("mylink");
+                    s_a.href = "map.html?zipcode=" + t;
+                }
+        </script>
 </body>
 
 </html>
