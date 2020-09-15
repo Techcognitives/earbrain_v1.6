@@ -27,8 +27,10 @@
   </div>
     <div class="map-left-container">
       <p class="zip-code">Zip Code<span class="zip_code_con"> <input type="number" class="zicode_input" id="zipCode" placeholder="" oninput="validity.valid||(value='');">
-        <p class="preffered-office"><img class="preffered-office-marker" src="images/map_pin_grey_org.png" width="20">Other Audiology Office</p>
-        <p class="preffered-office preffered-list-bottom"><img class="preffered-office-marker" src="images/Cognivue Circles-1.png" width="30">Cognivue Preferred Audiologist</p>
+        <p class="preffered-office"><img class="preffered-office-marker" src="images/Cognivue Circles-1.png" width="30">Cognivue Preferred Audiologist</p>
+        <p class="preffered-office preffered-list-bottom"><img class="preffered-office-marker" src="images/map_pin_grey_org.png" width="20">Other Audiology Office  <input id="otherAudiologyCheckbox" class="other-audiology-checkbox" type="checkbox" style="zoom:1.5;">
+        </p>
+
         <div id="locations">
           <!-- <div class="preffered-list">
             <img class="preffered-office-marker office-marker" src="images/Cognivue Circles-2.png" width="30">
@@ -80,6 +82,8 @@
 <script src='js/map.js'></script>
 
   <script type="text/javascript">
+
+
   var login = document.querySelector(".login");
 
     var trigger = document.querySelector(".trigger");
