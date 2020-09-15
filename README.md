@@ -1,1 +1,1 @@
-# earbrain_v1.6
+# EBrainmaps
