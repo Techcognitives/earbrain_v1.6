@@ -6050,6 +6050,779 @@ var locations =  [
     }
 ];
 
+    let myHeight = window.innerHeight;
+    var navHeight = $(".navBar").height();
+    var cognivuePreferred = []
+    var audiologyOffice = []
+    var isCognivuePreferred = true;
+
+   $(".map-left-container").height(myHeight-(navHeight))
+   $("#map").height(myHeight-navHeight)
+   $("#map").css("margin-top", navHeight+20)
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    const zipcode = urlParams.get('zipcode')
+    $("#zipCode").val(zipcode)
+    zipCodeSearch()
+   $( "#zipCode" ).keyup(function() {
+    zipCodeSearch();
+  });
+
+
+  var checkbox = document.getElementById('otherAudiologyCheckbox');
+
+checkbox.addEventListener('change', e => {
+
+    if(e.target.checked){
+        isCognivuePreferred = false;
+    }else{
+        isCognivuePreferred = true;
+    }
+    zipCodeSearch()
+});
+
+  function zipCodeSearch(){
+    var zipCode = $("#zipCode").val()
+    var length = zipCode.length;
+    if(length>=4){
+        var my_json = JSON.stringify(locations)
+        //We can use {'name': 'Lenovo Thinkpad 41A429ff8'} as criteria too
+        var filtered_json = find_in_object(JSON.parse(my_json), {zipGeneral: zipCode});
+        // if(filtered_json!=null&& filtered_json.length>0){
+        //     var firstObjState = filtered_json[0].stateProvince;
+        //     filtered_json = find_in_object(JSON.parse(my_json), {stateProvince: firstObjState});
+        // }
+        initMap(filtered_json)
+    } else if(length==0){
+        initMap(locations)
+    }else{
+        
+        initMap(null)
+    }
+  }
+  function find_in_object(my_object, my_criteria){
+
+    return my_object.filter(function(obj) {
+      return Object.keys(my_criteria).every(function(c) {
+        return obj[c] == my_criteria[c];
+      });
+    });
+  
+  }
+  var markers = []
+  var map;
+
+  function initMap(locations){
+    cognivuePreferred = [];
+    audiologyOffice = [];
+    $('#locations div').remove();
+      if(locations==null|| locations.length==0){
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 8,
+            center: new google.maps.LatLng(37.075039, -113.55568),
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+          });
+      }else{
+        for (i = 0; i < locations.length; i++) { 
+            var isPrefferedOffice = locations[i].mostAppropirateLeadDefinition
+            if(isPrefferedOffice =="Cognivue Preferred"){
+                cognivuePreferred.push(locations[i]);
+            }else{
+                audiologyOffice.push(locations[i]);
+            }
+            
+        }
+        if(isCognivuePreferred){
+            locations = cognivuePreferred;
+        }
+        var firstObj = locations[0];
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 8,
+            center: new google.maps.LatLng(firstObj.latitude, firstObj.longitude),
+            mapTypeId: google.maps.MapTypeId.ROADMAP
+          });
+          var infowindow = new google.maps.InfoWindow();
+    
+      var marker, i;
+      markers = []
+
+    
+      for (i = 0; i < locations.length; i++) {  
+        var icon = 'images/map_pin_org.png';
+        var listIcon = 'images/Cognivue Circles-1.png';
+        var isPrefferedOffice = locations[i].mostAppropirateLeadDefinition
+        var fullAddress = "";
+        if(locations[i].fullStreet!=null){
+            fullAddress = locations[i].fullStreet+", "+locations[i].city+", "+locations[i].stateProvince+", "+locations[i].zipGeneral;
+        }
+        if(isPrefferedOffice =="Cognivue Preferred"){
+            var phoneNumber = locations[i].phoneNumber;
+            if(phoneNumber!=null){
+                phoneNumber = locations[i].phoneNumber.toString();
+                var first = phoneNumber.slice(0,3);
+                var second = phoneNumber.slice(3,6);
+                var third = phoneNumber.substring(6,phoneNumber.length);
+                phoneNumber = "("+first+") "+second+"-"+third;
+            }
+            
+            var firstLast = locations[i].firstLast;
+            if(firstLast!=null){
+                    firstLast =firstLast+", AuD";
+            }else{
+                firstLast ="";
+            }
+            
+            
+
+
+            icon = 'images/map_pin_org.png';
+            listIcon = 'images/Cognivue Circles-1.png';
+            var locationData = '<div class="preffered-list" onClick="showMarker(1)"><img class="preffered-office-marker office-marker" src="'+listIcon+'" width="30"><div><div class="office-address"><p class="office-name">'+locations[i].practiceName+'</p><p class="office-name office-person-name">'+firstLast+'</p><p class="office-address-details">'+fullAddress+'</p><p class="office-contact-details">Phone: '+phoneNumber+'</p><p class="office-contact-details"></p></div></div><div class="clear"></div></div>';
+            $('#locations').append(locationData);
+
+        }else{
+            icon = 'images/map_pin_grey_org.png';
+            listIcon = 'images/map_pin_grey_org.png';
+            var locationData = '<div class="preffered-list"><img class="preffered-office-marker office-marker" src="'+listIcon+'" width="30"><div><div class="office-address"><p class="office-name">'+locations[i].practiceName+'</p><p class="office-address-details">'+fullAddress+'</p><p class="office-contact-details"></p></div></div><div class="clear"></div></div>';
+            $('#locations').append(locationData);
+
+        }
+         
+          var lat = eval(locations[i].latitude); //Note the value is in "" hence a string
+        var long = eval(locations[i].longitude); //Note the value is in "" hence a string
+    
+        
+        marker = new google.maps.Marker({
+    
+          position: new google.maps.LatLng(lat, long),
+          map: map,
+          icon: icon
+    
+        });
+        markers.push(marker);
+  
+    
+    
+        google.maps.event.addListener(marker, 'click', (function(marker, i) {
+          return function() {
+            var isPrefferedOffice = locations[i].mostAppropirateLeadDefinition
+            var locationMarker;
+            var fullAddress = "";
+            if(locations[i].fullStreet!=null){
+                fullAddress = locations[i].fullStreet+", "+locations[i].city+", "+locations[i].stateProvince+", "+locations[i].zipGeneral;
+            }
+            if(isPrefferedOffice =="Cognivue Preferred"){
+                var firstLast = locations[i].firstLast;
+                if(firstLast!=null){
+                        firstLast =firstLast+", AuD";
+                }else{
+                    firstLast ="";
+                }
+                var phoneNumber = locations[i].phoneNumber;
+            if(phoneNumber!=null){
+                phoneNumber = locations[i].phoneNumber.toString();
+                var first = phoneNumber.slice(0,3);
+                var second = phoneNumber.slice(3,6);
+                var third = phoneNumber.substring(6,phoneNumber.length);
+                phoneNumber = "("+first+") "+second+"-"+third;
+            }
+            
+                locationMarker = '<div class="preffered-map-list"><div><div class="office-address"><p class="office-name">'+locations[i].practiceName+'</p><p class="office-name office-person-name">'+firstLast+'</p><p class="office-address-details">'+fullAddress+'</p><p class="office-contact-details">Phone: '+phoneNumber+'</p><p class="office-contact-details"></p></div></div><div class="clear"></div></div>';
+    
+            }else{
+                locationMarker = '<div class="preffered-map-list"><div><div class="office-address"><p class="office-name">'+locations[i].practiceName+'</p><p class="office-address-details">'+fullAddress+'</p><p class="office-contact-details"></p><p class="office-contact-details"></p></div></div><div class="clear"></div></div>';
+    
+            }
+            infowindow.setContent(locationMarker);
+            infowindow.open(map, marker);
+          }
+        })(marker, i));
+      }
+      }
+    
+      
+      
+      
+  }
+  function showMarker(index) {
+    //markers[index - 1].setMap(map);
+  }
+
+  "-70.24563",
+        "geocode": "44.266842, -70.24563"
+    },
+    {
+        "practiceName": "Pacific ENT Medical Group",
+        "firstLast": "Chelsea Maag",
+        "fullStreet": "6010 Hidden Valley Road, Suite 210",
+        "city": "Carlsbad",
+        "stateProvince": "CA",
+        "zipGeneral": "92011",
+        "country": "United States",
+        "phoneNumber": 8587559343,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "33.122885",
+        "longitude": "-117.304894",
+        "geocode": "33.122885, -117.304894"
+    },
+    {
+        "practiceName": "Charleston ENT",
+        "firstLast": "Karen Moore",
+        "fullStreet": "2295 Henry Tecklenburg Dr.",
+        "city": "Charleston",
+        "stateProvince": "SC",
+        "zipGeneral": "29414",
+        "country": "United States",
+        "phoneNumber": 8434598965,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "32.821238",
+        "longitude": "-80.05353",
+        "geocode": "32.821238, -80.05353"
+    },
+    {
+        "practiceName": "MADISON & SARATOGA HEARING Center",
+        "firstLast": "Eileen Matuck",
+        "fullStreet": "414 Maple AveSuite 800",
+        "city": "Saratoga Springs",
+        "stateProvince": "NY",
+        "zipGeneral": "12866",
+        "country": "United States",
+        "phoneNumber": 5186902060,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "43.080399",
+        "longitude": "-73.77038",
+        "geocode": "43.080399, -73.77038"
+    },
+    {
+        "practiceName": "Costco Hearing Aid Center",
+        "firstLast": "Amy Fistel",
+        "fullStreet": "71 2nd Ave",
+        "city": "Waltham",
+        "stateProvince": "MA",
+        "zipGeneral": "02451",
+        "country": "United States",
+        "phoneNumber": 7814342059,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "42.393029",
+        "longitude": "-71.24771",
+        "geocode": "42.393029, -71.24771"
+    },
+    {
+        "practiceName": "Dimitra Loomos Audiology",
+        "firstLast": "Dimitra Loomos",
+        "fullStreet": "2301 Camino Ramon Suite 106",
+        "city": "San Ramon,",
+        "stateProvince": "CA",
+        "zipGeneral": "94583",
+        "country": "United States",
+        "phoneNumber": 5102827803,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "37.75735",
+        "longitude": "-121.95213",
+        "geocode": "37.75735, -121.95213"
+    },
+    {
+        "practiceName": "Midwest Medical Specialists",
+        "firstLast": "Pamela Nelson",
+        "fullStreet": "124 Westwoods Drive",
+        "city": "Liberty",
+        "stateProvince": "MO",
+        "zipGeneral": "64068",
+        "country": "United States",
+        "phoneNumber": 8164540666,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "39.246179",
+        "longitude": "-94.41763",
+        "geocode": "39.246179, -94.41763"
+    },
+    {
+        "practiceName": "ENT & Audiology associates",
+        "firstLast": "Jenny Head",
+        "fullStreet": "3820 Ed Dr",
+        "city": "Raleigh",
+        "stateProvince": "NC",
+        "zipGeneral": "27612",
+        "country": "United States",
+        "phoneNumber": 9197829003,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "35.847788",
+        "longitude": "-78.70161",
+        "geocode": "35.847788, -78.70161"
+    },
+    {
+        "practiceName": "Kristi Oeding Audiology",
+        "firstLast": "Kristi Oeding",
+        "fullStreet": "4921 Parkview Pl Ste 11a",
+        "city": "Saint Louis",
+        "stateProvince": "MO",
+        "zipGeneral": "63110",
+        "country": "United States",
+        "phoneNumber": 3143627489,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "38.622601",
+        "longitude": "-90.26182",
+        "geocode": "38.622601, -90.26182"
+    },
+    {
+        "practiceName": "Lourdez Zamora-Fierro Audiology",
+        "firstLast": "Lourdez Zamora-Fierro",
+        "fullStreet": "620 N Alleghaney Ave",
+        "city": "Odessa",
+        "stateProvince": "TX",
+        "zipGeneral": "79761",
+        "country": "United States",
+        "phoneNumber": 4323328244,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "31.854455",
+        "longitude": "-102.35906",
+        "geocode": "31.854455, -102.35906"
+    },
+    {
+        "practiceName": "The Nurse Practitioner Group",
+        "firstLast": "Jennifer Martin",
+        "fullStreet": "151 N. Nob Hill Road, Suite 205",
+        "city": "Plantation",
+        "stateProvince": "FL",
+        "zipGeneral": "33324",
+        "country": "United States",
+        "phoneNumber": 2026819661,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "26.110631",
+        "longitude": "-80.27469",
+        "geocode": "26.110631, -80.27469"
+    },
+    {
+        "practiceName": "Connect Hearing",
+        "firstLast": "Nikita Razeghi",
+        "fullStreet": "22 W Padonia Rd Ste C245",
+        "city": "Timonium",
+        "stateProvince": "MD",
+        "zipGeneral": "21093",
+        "country": "United States",
+        "phoneNumber": 4102529270,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "39.435789",
+        "longitude": "-76.63614",
+        "geocode": "39.435789, -76.63614"
+    },
+    {
+        "practiceName": "Comprehensive Audiology",
+        "firstLast": "Esther Fogel",
+        "fullStreet": "261 Broadway",
+        "city": "Lynbrook",
+        "stateProvince": "NY",
+        "zipGeneral": "11563",
+        "country": "United States",
+        "phoneNumber": 5162262141,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "40.656974",
+        "longitude": "-73.67306",
+        "geocode": "40.656974, -73.67306"
+    },
+    {
+        "practiceName": "Queen City ENT",
+        "firstLast": "Shannon MacDonald",
+        "fullStreet": "1994 Wellness Blvd, Suite 210",
+        "city": "Monroe",
+        "stateProvince": "NC",
+        "zipGeneral": "28110",
+        "country": "United States",
+        "phoneNumber": 7047031080,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "35.031947",
+        "longitude": "-80.56002",
+        "geocode": "35.031947, -80.56002"
+    },
+    {
+        "practiceName": "Dominick Servedio Audiologists",
+        "firstLast": "Barbara Grossman",
+        "fullStreet": "200 West 57th StreetSuite 910",
+        "city": "New York",
+        "stateProvince": "NY",
+        "zipGeneral": "10019",
+        "country": "United States",
+        "phoneNumber": 9174416094,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "40.765714",
+        "longitude": "-73.9856",
+        "geocode": "40.765714, -73.9856"
+    },
+    {
+        "practiceName": "Dedham Medical Associates",
+        "firstLast": "Terri Loewenthal",
+        "fullStreet": "1 Lyons Street",
+        "city": "Dedham",
+        "stateProvince": "MA",
+        "zipGeneral": "02026",
+        "country": "United States",
+        "phoneNumber": 7814933700,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "42.244609",
+        "longitude": "-71.16553",
+        "geocode": "42.244609, -71.16553"
+    },
+    {
+        "practiceName": "Associates of Otolaryngology",
+        "firstLast": "Hannah Tautz",
+        "fullStreet": "850 E Harvard Ave Ste 505",
+        "city": "Denver",
+        "stateProvince": "CO",
+        "zipGeneral": "80210",
+        "country": "United States",
+        "phoneNumber": 7208977160,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "39.679437",
+        "longitude": "-104.96473",
+        "geocode": "39.679437, -104.96473"
+    },
+    {
+        "practiceName": "Linda Murrans Audiology",
+        "firstLast": "Linda Murrans",
+        "fullStreet": "345 N Smith Avenue Childrens",
+        "city": "St Paul",
+        "stateProvince": "MN",
+        "zipGeneral": "55102",
+        "country": "United States",
+        "phoneNumber": 6512206880,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "44.935315",
+        "longitude": "-93.12049",
+        "geocode": "44.935315, -93.12049"
+    },
+    {
+        "practiceName": "Hearing & Speech Center of Northern California",
+        "firstLast": "Malvina Levy",
+        "fullStreet": "1234 Divisadero St San Francisco",
+        "city": "San Francisco",
+        "stateProvince": "CA",
+        "zipGeneral": "94115",
+        "country": "United States",
+        "phoneNumber": 4156512203,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "37.786129",
+        "longitude": "-122.43736",
+        "geocode": "37.786129, -122.43736"
+    },
+    {
+        "practiceName": "HearingLife - Scottsdale",
+        "firstLast": "Daniel Greenblatt",
+        "fullStreet": "9777 N 91st St Ste 101",
+        "city": "Scottsdale",
+        "stateProvince": "AZ",
+        "zipGeneral": "85258",
+        "country": "United States",
+        "phoneNumber": 4804225419,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "33.566635",
+        "longitude": "-111.89337",
+        "geocode": "33.566635, -111.89337"
+    },
+    {
+        "practiceName": "Health Partners Park Nicollet",
+        "firstLast": "Vicki Anderson",
+        "fullStreet": "8170 33rd Ave S",
+        "city": "Bloomington",
+        "stateProvince": "MN",
+        "zipGeneral": "55425",
+        "country": "United States",
+        "phoneNumber": 9528836000,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "44.846765",
+        "longitude": "-93.2449",
+        "geocode": "44.846765, -93.2449"
+    },
+    {
+        "practiceName": "Sound Relief Hearing Center",
+        "firstLast": "Julie Prutsman",
+        "fullStreet": "200 Plaza DrSuite 110",
+        "city": "Highlands Ranch",
+        "stateProvince": "CO",
+        "zipGeneral": "80129",
+        "country": "United States",
+        "phoneNumber": 7202599962,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "39.539556",
+        "longitude": "-105.009739",
+        "geocode": "39.539556, -105.009739"
+    },
+    {
+        "practiceName": "Hearing Doctors of Ohio",
+        "firstLast": "Laura Sadler",
+        "fullStreet": "7251 Engle RoadSuite 110",
+        "city": "Middleburg Heights",
+        "stateProvince": "OH",
+        "zipGeneral": "44130",
+        "country": "United States",
+        "phoneNumber": 4402345515,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "41.378051",
+        "longitude": "-81.77945",
+        "geocode": "41.378051, -81.77945"
+    },
+    {
+        "practiceName": "Ear, Nose and Throat Associates of East Texas",
+        "firstLast": "Rachel Dunn",
+        "fullStreet": "1136 E. Grande Blvd.",
+        "city": "Tyler",
+        "stateProvince": "TX",
+        "zipGeneral": "75703",
+        "country": "United States",
+        "phoneNumber": 9035925601,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "32.264365",
+        "longitude": "-95.31347",
+        "geocode": "32.264365, -95.31347"
+    },
+    {
+        "practiceName": "Audiology Hears",
+        "firstLast": "Shonda Bailey",
+        "fullStreet": "6130 Southard Trace",
+        "city": "Cumming",
+        "stateProvince": "GA",
+        "zipGeneral": "30040",
+        "country": "United States",
+        "phoneNumber": 7707812376,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "34.235408",
+        "longitude": "-84.17441",
+        "geocode": "34.235408, -84.17441"
+    },
+    {
+        "practiceName": "Aaron's Hearing Care",
+        "firstLast": "Aaron Liebman",
+        "fullStreet": "925 37th PlaceCitrus Medical Plaza",
+        "city": "Vero Beach",
+        "stateProvince": "FL",
+        "zipGeneral": "32960",
+        "country": "United States",
+        "phoneNumber": 7726174901,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "27.636828",
+        "longitude": "-80.40294",
+        "geocode": "27.636828, -80.40294"
+    },
+    {
+        "practiceName": "Karen Scott Audiology",
+        "firstLast": "Karen Scott",
+        "fullStreet": "3220 South Higuera StreetSuite #320",
+        "city": "San Luis Obispo",
+        "stateProvince": "CA",
+        "zipGeneral": "93401",
+        "country": "United States",
+        "phoneNumber": 8055411790,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "35.262548",
+        "longitude": "-120.65196",
+        "geocode": "35.262548, -120.65196"
+    },
+    {
+        "practiceName": "Berks Hearing Professionals",
+        "firstLast": "Nicole Kendig",
+        "fullStreet": "560 Van Reed Road, Suite 205",
+        "city": "Wyomissing",
+        "stateProvince": "PA",
+        "zipGeneral": "19610",
+        "country": "United States",
+        "phoneNumber": 6107506107,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "40.335023",
+        "longitude": "-75.97099",
+        "geocode": "40.335023, -75.97099"
+    },
+    {
+        "practiceName": "Laura Stroud Audiology",
+        "firstLast": "Laura Stroud",
+        "fullStreet": "1222 South Patterson Boulevard Suite 391",
+        "city": "Dayton",
+        "stateProvince": "OH",
+        "zipGeneral": "45402",
+        "country": "United States",
+        "phoneNumber": 9372082548,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "39.757758",
+        "longitude": "-84.18848",
+        "geocode": "39.757758, -84.18848"
+    },
+    {
+        "practiceName": "Hearing And Speech Clinic",
+        "firstLast": "Brad Murphree",
+        "fullStreet": "303 Williams Ave.Suite 1111",
+        "city": "Huntsville",
+        "stateProvince": "AL",
+        "zipGeneral": "35801",
+        "country": "United States",
+        "phoneNumber": 2565367405,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "34.72879",
+        "longitude": "-86.57316",
+        "geocode": "34.72879, -86.57316"
+    },
+    {
+        "practiceName": "Lynn Audiology",
+        "firstLast": "Deborah Lynn",
+        "fullStreet": "15 Matthews Ste 203",
+        "city": "Goshen",
+        "stateProvince": "NY",
+        "zipGeneral": "10924",
+        "country": "United States",
+        "phoneNumber": 8452948544,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "41.38928",
+        "longitude": "-74.3337",
+        "geocode": "41.38928, -74.3337"
+    },
+    {
+        "practiceName": "Hoffman Audiology",
+        "firstLast": "Chris Hoffmann",
+        "fullStreet": "4920 Barranca PkwySuite D",
+        "city": "Irvine",
+        "stateProvince": "CA",
+        "zipGeneral": "92604",
+        "country": "United States",
+        "phoneNumber": 9495365180,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "33.68762",
+        "longitude": "-117.78852",
+        "geocode": "33.68762, -117.78852"
+    },
+    {
+        "practiceName": "Jastreboff Hearing Disorders Foundation (JHDF) Clinic",
+        "firstLast": "Pawel Jastreboff",
+        "fullStreet": "5570 Sterrett Place, Ste 209",
+        "city": "Columbia",
+        "stateProvince": "MD",
+        "zipGeneral": "21044",
+        "country": "United States",
+        "phoneNumber": 4432184004,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "39.21536",
+        "longitude": "-76.87823",
+        "geocode": "39.21536, -76.87823"
+    },
+    {
+        "practiceName": "Audiology And Hearing Associates",
+        "firstLast": "Larry Giovinazzo",
+        "fullStreet": "8019 E. Market St.",
+        "city": "Warren",
+        "stateProvince": "OH",
+        "zipGeneral": "44484",
+        "country": "United States",
+        "phoneNumber": 3303724500,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "41.226957",
+        "longitude": "-80.76475",
+        "geocode": "41.226957, -80.76475"
+    },
+    {
+        "practiceName": "Southeast Health",
+        "firstLast": "Carol Thiele",
+        "fullStreet": "1723 Broadway Ste 205",
+        "city": "Cape Girardeau",
+        "stateProvince": "MO",
+        "zipGeneral": "63701",
+        "country": "United States",
+        "phoneNumber": 5735194646,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "37.32564",
+        "longitude": "-89.5659",
+        "geocode": "37.32564, -89.5659"
+    },
+    {
+        "practiceName": "Sound Relief Hearing Center",
+        "firstLast": "Alison LaBrec",
+        "fullStreet": "1030 Johnson Rd Ste 130",
+        "city": "Golden",
+        "stateProvince": "CO",
+        "zipGeneral": "80401",
+        "country": "United States",
+        "phoneNumber": 7202592793,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "39.735745",
+        "longitude": "-105.19337",
+        "geocode": "39.735745, -105.19337"
+    },
+    {
+        "practiceName": "Hearing And Balance Center",
+        "firstLast": "Elizabeth LeMaire",
+        "fullStreet": "103 Saint Thomas Street",
+        "city": "Lafayette",
+        "stateProvince": "LA",
+        "zipGeneral": "70506",
+        "country": "United States",
+        "phoneNumber": 3373810601,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "30.211901",
+        "longitude": "-92.05912",
+        "geocode": "30.211901, -92.05912"
+    },
+    {
+        "practiceName": "Southside Ear, Nose, & Throat",
+        "fullStreet": "930 South Ave. Suite 4B",
+        "city": "Colonial Height",
+        "stateProvince": "VA",
+        "zipGeneral": "23834",
+        "country": "United States",
+        "phoneNumber": 8045040530,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "37.265403",
+        "longitude": "-77.40438",
+        "geocode": "37.265403, -77.40438"
+    },
+    {
+        "practiceName": "Premier Hearing Center",
+        "fullStreet": "5285 E. Knight Dr",
+        "city": "Tucson",
+        "stateProvince": "AZ",
+        "zipGeneral": "85712",
+        "country": "United States",
+        "phoneNumber": 5202824448,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "32.249551",
+        "longitude": "-110.8878",
+        "geocode": "32.249551, -110.8878"
+    },
+    {
+        "practiceName": "Leesburg Family Hearing",
+        "fullStreet": "211 Gibson St. NW Suite 202",
+        "city": "Leesburg",
+        "stateProvince": "VA",
+        "zipGeneral": "20176",
+        "country": "United States",
+        "phoneNumber": 7037377707,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "39.138978",
+        "longitude": "-77.54519",
+        "geocode": "39.138978, -77.54519"
+    },
+    {
+        "practiceName": "Advanced ENT and Allergy",
+        "fullStreet": "1725 Gagel Ave",
+        "city": "Louisville",
+        "stateProvince": "KY",
+        "zipGeneral": "40216",
+        "country": "United States",
+        "phoneNumber": 5029955525,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "38.188886",
+        "longitude": "-85.83137",
+        "geocode": "38.188886, -85.83137"
+    },
+    {
+        "practiceName": "Hoglund Family Hearing",
+        "fullStreet": "13710 Metropolis Ave., Suite 101",
+        "city": "Fort Myers",
+        "stateProvince": "FL",
+        "zipGeneral": "33912",
+        "country": "United States",
+        "phoneNumber": 2393009143,
+        "mostAppropirateLeadDefinition": "Audiology Office",
+        "latitude": "26.501582",
+        "longitude": "-81.82841",
+        "geocode": "26.501582, -81.82841"
+    }
+];
+
 let myHeight = window.innerHeight;
     console.log("......"+myHeight);
     var navHeight = $(".navBar").height();
